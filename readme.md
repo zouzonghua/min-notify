@@ -32,13 +32,13 @@
 
 构建镜像
 
-```
+```bash
 docker build -t min-notify .
 ```
 
 运行容器
 
-```
+```bash
 docker run -d --name min-notify \
   -p 5001:5001 \
   -v $(pwd)/config.json:/app/config.json \
@@ -47,7 +47,7 @@ docker run -d --name min-notify \
 
 配置文件 (config.json)
 
-```
+```json
 {
     "smtp_server": "smtp.gmail.com",
     "smtp_port": 587,
@@ -59,7 +59,7 @@ docker run -d --name min-notify \
 
 调用示例
 
-```
+```bash
 # Curl 测试
 curl -X POST http://localhost:5001/notify \
   -H "Content-Type: application/json" \
