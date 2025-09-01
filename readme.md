@@ -49,10 +49,8 @@ docker run -d --name min-notify -p 5001:5001 zouzonghua/min-notify:latest
 
 镜像托管在 Docker Hub，支持以下标签：
 
-- `latest`: 最新版本
-- `x.y.z`: 具体版本号（如 `1.0.0`）
-- `x.y`: 主次版本号（如 `1.0`）
-
+- `latest`: 最新版本（main 分支更新时）
+- `vx.y.z`: 具体版本号（如 `v1.0.0`）
 
 发布流程：
 ```bash
@@ -64,10 +62,20 @@ git tag v1.0.0
 git push origin v1.0.0
 ```
 
+使用示例：
+```bash
+# 使用最新版本
+docker pull zouzonghua/min-notify:latest
+
+# 使用特定版本
+docker pull zouzonghua/min-notify:v1.0.0
+```
+
 > 注意：
 > 1. 推送到 main 分支只会更新 `latest` 标签
 > 2. 创建并推送 tag 才会生成版本号镜像
 > 3. tag 必须以 `v` 开头，如 `v1.0.0`
+
 
 ## 调用示例
 
