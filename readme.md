@@ -43,19 +43,34 @@ docker run -d --name min-notify -p 5001:5001 min-notify
 docker run -d --name min-notify -p 5001:5001 zouzonghua/min-notify:latest
 ```
 
-配置文件 (config.json)
+## 版本发布
 
-```json
-{
-    "smtp_server": "smtp.gmail.com",
-    "smtp_port": 587,
-    "smtp_user": "sender@gmail.com",
-    "smtp_pass": "授权码",
-    "to_email": "target@example.com"
-}
+### Docker 镜像版本
+
+镜像托管在 Docker Hub，支持以下标签：
+
+- `latest`: 最新版本
+- `x.y.z`: 具体版本号（如 `1.0.0`）
+- `x.y`: 主次版本号（如 `1.0`）
+
+
+发布新版本：
 ```
+git tag v0.0.1
+git push origin v0.0.1
+```
+注意：
+1. 直接推送到 main 分支只会更新 latest 标签
+2. 要发布带版本号的镜像，必须创建并推送 git tag
+3. tag 格式必须是 v*.*.*（例如 v0.0.1）
 
-调用示例
+建议的工作流程：
+1. 开发完新功能后，先提交到 main 分支（此时只更新 latest）
+2. 确认功能稳定后，创建新的版本标签（此时会创建带版本号的镜像）
+
+这样可以保证版本发布的规范性和可追踪性。
+
+## 调用示例
 
 ```bash
 # Curl 测试
