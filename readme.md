@@ -22,10 +22,10 @@ docker build -t min-notify .
 
 运行容器
 ```
-docker run -d --name mail-service \
+docker run -d --name min-notify \
   -p 5001:5001 \
   -v $(pwd)/config.json:/app/config.json \
-  mail-service
+  min-notify
 ```
 
 配置文件 (config.json)
