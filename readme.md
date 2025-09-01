@@ -39,6 +39,7 @@ docker build -t min-notify .
 运行容器
 
 ```bash
+touch config.json
 docker run -d --name min-notify \
   -p 5001:5001 \
   -v $(pwd)/config.json:/app/config.json \
