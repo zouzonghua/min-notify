@@ -34,16 +34,13 @@
 
 ```bash
 docker build -t min-notify .
+docker run -d --name min-notify -p 5001:5001 min-notify
 ```
 
 运行容器
 
 ```bash
-touch config.json
-docker run -d --name min-notify \
-  -p 5001:5001 \
-  -v $(pwd)/config.json:/app/config.json \
-  min-notify
+docker run -d --name min-notify -p 5001:5001 zouzonghua/min-notify:latest
 ```
 
 配置文件 (config.json)

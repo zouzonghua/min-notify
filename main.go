@@ -28,7 +28,7 @@ type Notification struct {
 var (
 	config     Config
 	configLock sync.RWMutex
-	configFile = "config.json"
+	configFile = "./data/config.json"
 )
 
 // ---------------- 配置管理 ----------------
