@@ -54,21 +54,20 @@ docker run -d --name min-notify -p 5001:5001 zouzonghua/min-notify:latest
 - `x.y`: 主次版本号（如 `1.0`）
 
 
-发布新版本：
-```
-git tag v0.0.1
-git push origin v0.0.1
-```
-注意：
-1. 直接推送到 main 分支只会更新 latest 标签
-2. 要发布带版本号的镜像，必须创建并推送 git tag
-3. tag 格式必须是 v*.*.*（例如 v0.0.1）
+发布流程：
+```bash
+# 1. 提交代码到 main 分支会更新 latest 标签
+git push origin main
 
-建议的工作流程：
-1. 开发完新功能后，先提交到 main 分支（此时只更新 latest）
-2. 确认功能稳定后，创建新的版本标签（此时会创建带版本号的镜像）
+# 2. 发布新版本（会创建对应版本号的镜像标签）
+git tag v1.0.0
+git push origin v1.0.0
+```
 
-这样可以保证版本发布的规范性和可追踪性。
+> 注意：
+> 1. 推送到 main 分支只会更新 `latest` 标签
+> 2. 创建并推送 tag 才会生成版本号镜像
+> 3. tag 必须以 `v` 开头，如 `v1.0.0`
 
 ## 调用示例
 

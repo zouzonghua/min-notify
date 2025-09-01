@@ -3,7 +3,7 @@ name: Publish Docker image
 on:
   push:
     branches: [ "main" ]
-    tags: [ 'v*.*.*' ]  # 匹配版本号标签
+    tags: [ 'v*.*.*' ]
   release:
     types: [published]
 
@@ -20,7 +20,6 @@ jobs:
         with:
           images: zouzonghua/min-notify
           tags: |
-            type=ref,event=branch
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=raw,value=latest,enable={{is_default_branch}}
