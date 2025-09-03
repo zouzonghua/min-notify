@@ -102,8 +102,7 @@ docker run -d --name min-notify -p 5001:5001 min-notify
 
 ```json
 {
-    "code": 0,
-    "message": "success"
+    "status": "ok"
 }
 ```
 
