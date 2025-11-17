@@ -9,10 +9,8 @@ RUN go build -o min-notify main.go
 FROM alpine:latest
 WORKDIR /app
 
-# 安装时区数据并设置为中国时区
-RUN apk add --no-cache tzdata && \
-    cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
-    echo "Asia/Shanghai" > /etc/timezone
+# 安装时区数据（时区由环境变量 TZ 控制，不硬编码）
+RUN apk add --no-cache tzdata
 
 # 从构建阶段复制可执行文件
 COPY --from=builder /app/min-notify .
@@ -23,5 +21,13 @@ VOLUME ["/app/data"]
 # 开放 5001 端口
 EXPOSE 5001
 
-# 启动前如果没有 config.json，则自动生成一个默认配置文件
-ENTRYPOINT ["/bin/sh", "-c", "if [ ! -f /app/data/config.json ]; then echo '{}' > /app/data/config.json; fi && ./min-notify"]
+# 启动脚本：根据 TZ 环境变量设置时区，并初始化配置文件
+ENTRYPOINT ["/bin/sh", "-c", "\
+    if [ -n \"$TZ\" ]; then \
+        ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && \
+        echo $TZ > /etc/timezone; \
+    fi && \
+    if [ ! -f /app/data/config.json ]; then \
+        echo '{}' > /app/data/config.json; \
+    fi && \
+    ./min-notify"]
