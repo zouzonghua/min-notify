@@ -10,6 +10,7 @@ import (
 	"net/smtp"
 	"os"
 	"sync"
+	"time"
 )
 
 type Config struct {
@@ -37,6 +38,7 @@ var (
 // 加载配置
 func loadConfig() {
 	if _, err := os.Stat(configFile); os.IsNotExist(err) {
+		log.Printf("[配置] 配置文件不存在，创建默认配置: %s", configFile)
 		config = Config{
 			SMTPServer: "smtp.qq.com",
 			SMTPPort:   465, // 默认使用 SSL 端口
@@ -49,16 +51,29 @@ func loadConfig() {
 	} else {
 		data, err := ioutil.ReadFile(configFile)
 		if err != nil {
-			log.Fatalf("读取配置失败: %v", err)
+			log.Fatalf("[错误] 读取配置失败: %v", err)
 		}
-		_ = json.Unmarshal(data, &config)
+		if err := json.Unmarshal(data, &config); err != nil {
+			log.Fatalf("[错误] 解析配置失败: %v", err)
+		}
+		log.Printf("[配置] 加载成功 - SMTP服务器: %s:%d, 用户: %s, 发件人名称: %s",
+			config.SMTPServer, config.SMTPPort, config.SMTPUser, config.SenderName)
 	}
 }
 
 // 保存配置
 func saveConfig() {
-	data, _ := json.MarshalIndent(config, "", "  ")
-	_ = ioutil.WriteFile(configFile, data, 0644)
+	data, err := json.MarshalIndent(config, "", "  ")
+	if err != nil {
+		log.Printf("[错误] 序列化配置失败: %v", err)
+		return
+	}
+	if err := ioutil.WriteFile(configFile, data, 0644); err != nil {
+		log.Printf("[错误] 保存配置失败: %v", err)
+		return
+	}
+	log.Printf("[配置] 保存成功 - SMTP服务器: %s:%d, 用户: %s, 收件人: %s",
+		config.SMTPServer, config.SMTPPort, config.SMTPUser, config.ToEmail)
 }
 
 // ---------------- 邮件发送 ----------------
@@ -69,8 +84,8 @@ func sendEmail(subject, body string) error {
 
 	addr := fmt.Sprintf("%s:%d", config.SMTPServer, config.SMTPPort)
 
-	log.Printf("准备发送邮件: server=%s port=%d user=%s to=%s",
-		config.SMTPServer, config.SMTPPort, config.SMTPUser, config.ToEmail)
+	log.Printf("[邮件] 准备发送 - 主题: %s, 收件人: %s, 服务器: %s:%d",
+		subject, config.ToEmail, config.SMTPServer, config.SMTPPort)
 
 	// 构造邮件头
 	header := make(map[string]string)
@@ -132,7 +147,7 @@ func sendEmail(subject, body string) error {
 	}
 	_ = w.Close()
 
-	log.Println("邮件发送成功")
+	log.Printf("[邮件] 发送成功 ✓ - 主题: %s, 收件人: %s", subject, config.ToEmail)
 	return nil
 }
 
@@ -140,6 +155,8 @@ func sendEmail(subject, body string) error {
 
 // 提供邮件通知接口
 func notifyHandler(w http.ResponseWriter, r *http.Request) {
+	log.Printf("[API] 收到通知请求 - 来源: %s", r.RemoteAddr)
+
 	if r.Method != http.MethodPost {
 		http.Error(w, "Only POST allowed", http.StatusMethodNotAllowed)
 		return
@@ -147,6 +164,7 @@ func notifyHandler(w http.ResponseWriter, r *http.Request) {
 
 	var notif Notification
 	if err := json.NewDecoder(r.Body).Decode(&notif); err != nil {
+		log.Printf("[API] 请求解析失败: %v", err)
 		http.Error(w, "Invalid request", http.StatusBadRequest)
 		return
 	}
@@ -158,12 +176,15 @@ func notifyHandler(w http.ResponseWriter, r *http.Request) {
 		notif.Message = "无内容"
 	}
 
+	log.Printf("[API] 处理通知 - 标题: %s, 内容长度: %d 字符", notif.Title, len(notif.Message))
+
 	if err := sendEmail(notif.Title, notif.Message); err != nil {
-		log.Println("邮件发送失败:", err)
+		log.Printf("[API] 邮件发送失败 ✗ - 错误: %v", err)
 		http.Error(w, "发送邮件失败: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
+	log.Printf("[API] 通知处理成功 ✓")
 	w.Header().Set("Content-Type", "application/json")
 	_, _ = w.Write([]byte(`{"status": "ok"}`))
 }
@@ -172,20 +193,26 @@ func notifyHandler(w http.ResponseWriter, r *http.Request) {
 func configHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
+		log.Printf("[API] 获取配置请求 - 来源: %s", r.RemoteAddr)
 		configLock.RLock()
 		defer configLock.RUnlock()
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(config)
 
 	case http.MethodPost:
+		log.Printf("[API] 更新配置请求 - 来源: %s", r.RemoteAddr)
 		var newConfig Config
 		if err := json.NewDecoder(r.Body).Decode(&newConfig); err != nil {
+			log.Printf("[API] 配置解析失败: %v", err)
 			http.Error(w, "Invalid config", http.StatusBadRequest)
 			return
 		}
 		configLock.Lock()
+		oldServer := config.SMTPServer
 		config = newConfig
 		configLock.Unlock()
+		log.Printf("[API] 配置已更新 - 旧服务器: %s, 新服务器: %s:%d",
+			oldServer, newConfig.SMTPServer, newConfig.SMTPPort)
 		saveConfig()
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`{"status": "saved"}`))
@@ -195,6 +222,14 @@ func configHandler(w http.ResponseWriter, r *http.Request) {
 // ---------------- Main ----------------
 
 func main() {
+	// 设置日志格式：包含日期和时间
+	log.SetFlags(log.LstdFlags | log.Lmsgprefix)
+
+	log.Println("========================================")
+	log.Println("  min-notify 邮件通知服务")
+	log.Printf("  启动时间: %s", time.Now().Format("2006-01-02 15:04:05"))
+	log.Println("========================================")
+
 	loadConfig()
 
 	// 静态文件 (配置页面)
@@ -202,6 +237,16 @@ func main() {
 	http.HandleFunc("/api/config", configHandler)
 	http.HandleFunc("/notify", notifyHandler)
 
-	fmt.Println("服务启动: http://0.0.0.0:5001")
-	log.Fatal(http.ListenAndServe(":5001", nil))
+	log.Println("[系统] HTTP 服务器启动成功")
+	log.Println("[系统] 监听地址: 0.0.0.0:5001")
+	log.Println("[系统] 访问地址: http://localhost:5001")
+	log.Println("[系统] API 端点:")
+	log.Println("[系统]   - POST /notify       发送通知")
+	log.Println("[系统]   - GET  /api/config   获取配置")
+	log.Println("[系统]   - POST /api/config   更新配置")
+	log.Println("========================================")
+
+	if err := http.ListenAndServe(":5001", nil); err != nil {
+		log.Fatalf("[错误] 服务器启动失败: %v", err)
+	}
 }

@@ -12,8 +12,7 @@ WORKDIR /app
 # 安装时区数据并设置为中国时区
 RUN apk add --no-cache tzdata && \
     cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
-    echo "Asia/Shanghai" > /etc/timezone && \
-    apk del tzdata
+    echo "Asia/Shanghai" > /etc/timezone
 
 # 从构建阶段复制可执行文件
 COPY --from=builder /app/min-notify .
