@@ -20,6 +20,7 @@
     <label>SMTP 端口: <input id="smtp_port" type="number"></label>
     <label>SMTP 用户: <input id="smtp_user"></label>
     <label>SMTP 密码: <input id="smtp_pass" type="password"></label>
+    <label>发送人名称: <input id="sender_name" placeholder="例如：系统通知"></label>
     <label>收件人邮箱: <input id="to_email"></label>
     <button onclick="saveConfig()">保存配置</button>
   </div>
@@ -41,6 +42,7 @@
       document.getElementById('smtp_port').value = cfg.smtp_port;
       document.getElementById('smtp_user').value = cfg.smtp_user;
       document.getElementById('smtp_pass').value = cfg.smtp_pass;
+      document.getElementById('sender_name').value = cfg.sender_name || '';
       document.getElementById('to_email').value = cfg.to_email;
     }
 
@@ -50,6 +52,7 @@
         smtp_port: parseInt(document.getElementById('smtp_port').value),
         smtp_user: document.getElementById('smtp_user').value,
         smtp_pass: document.getElementById('smtp_pass').value,
+        sender_name: document.getElementById('sender_name').value,
         to_email: document.getElementById('to_email').value,
       };
       let res = await fetch('/api/config', {
