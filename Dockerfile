@@ -8,6 +8,13 @@ RUN go build -o min-notify main.go
 # 使用更小的 alpine 镜像作为运行环境
 FROM alpine:latest
 WORKDIR /app
+
+# 安装时区数据并设置为中国时区
+RUN apk add --no-cache tzdata && \
+    cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
+    echo "Asia/Shanghai" > /etc/timezone && \
+    apk del tzdata
+
 # 从构建阶段复制可执行文件
 COPY --from=builder /app/min-notify .
 # 复制静态资源文件夹
