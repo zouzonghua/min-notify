@@ -17,6 +17,7 @@ type Config struct {
 	SMTPPort   int    `json:"smtp_port"`
 	SMTPUser   string `json:"smtp_user"`
 	SMTPPass   string `json:"smtp_pass"`
+	SenderName string `json:"sender_name"`
 	ToEmail    string `json:"to_email"`
 }
 
@@ -41,6 +42,7 @@ func loadConfig() {
 			SMTPPort:   465, // 默认使用 SSL 端口
 			SMTPUser:   "",
 			SMTPPass:   "",
+			SenderName: "系统通知",
 			ToEmail:    "",
 		}
 		saveConfig()
@@ -72,7 +74,12 @@ func sendEmail(subject, body string) error {
 
 	// 构造邮件头
 	header := make(map[string]string)
-	header["From"] = config.SMTPUser
+	// 使用自定义发送人名称
+	if config.SenderName != "" {
+		header["From"] = fmt.Sprintf("%s <%s>", config.SenderName, config.SMTPUser)
+	} else {
+		header["From"] = config.SMTPUser
+	}
 	header["To"] = config.ToEmail
 	header["Subject"] = subject
 	header["Content-Type"] = "text/plain; charset=UTF-8"
